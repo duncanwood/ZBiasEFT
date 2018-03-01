@@ -10,6 +10,8 @@
 
 /* C language definitions for use with Mathematica output */
 
+#ifndef MDEFS_H
+#define MDEFS_H
 
 #define Power(x, y)	(pow((double)(x), (double)(y)))
 #define Sqrt(x)		(sqrt((double)(x)))
@@ -40,5 +42,9 @@
 
 /** Could add definitions for Random(), SeedRandom(), etc. **/
 
+static unsigned char Boole(bool x) {
+	if (x) return 1;
+	else return 0;
+}
 
-
+#endif
