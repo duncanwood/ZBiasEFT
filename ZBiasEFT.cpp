@@ -58,7 +58,7 @@ static int testIntegrands(int argc, char** args) {
 		catch (const std::exception e) {}
 	}	
 
-	Cosmology C (.7,.971,.3,.05);
+	Cosmology C (.688,.971,.295,.0473);
 	InterpolatedPS ps (C, "p11cambDM.dat");
 	
 	cout << Integrand_1(1,2,.5,[&ps] (real k) {return ps.Evaluate(k);}) << endl;/*
