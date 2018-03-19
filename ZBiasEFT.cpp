@@ -8,6 +8,8 @@
 #include <Copter/Quadrature.h>
 #include "kernels.h"
 #include "integrands.h"
+#include <unordered_map>
+#include <deque>
 
 using namespace std;
 
@@ -48,6 +50,12 @@ int test1() {
 	return 0;
 }
 
+struct CachedValue {
+	real k;
+	real ps;
+	CachedValue(real new_k, real new_ps) : k(new_k), ps(new_ps) {}
+};
+
 static int testIntegrands(int argc, char** args) {
 	
 	int nIntegrals = 1;
@@ -58,22 +66,11 @@ static int testIntegrands(int argc, char** args) {
 		catch (const std::exception e) {}
 	}	
 
-	Cosmology C (.688,.971,.295,.0473);
-	InterpolatedPS ps (C, "p11cambDM.dat");
+	const Cosmology C (.688,.971,.295,.0473);
+	const InterpolatedPS ps (C, "p11cambDM.dat");
 	
-	cout << Integrand_1(1,2,.5,[&ps] (real k) {return ps.Evaluate(k);}) << endl;/*
-	cout << Integrand_2 << endl;
-	cout << Integrand_3 << endl;
-	cout << Integrand_5 << endl;
-	cout << Integrand_7 << endl;
-	cout << Integrand_10 << endl;
-	cout << Integrand_30 << endl;
-	cout << Integrand_35 << endl;
-	cout << Integrand_43 << endl;
-
-
-*/
-	ofstream data ("data.txt");
+	ofstream data ("integrals_noresum.txt");
+	
 	real klist[100] = {0.01043818,0.01532369,0.02157276,0.02834865,
 			0.03456784,0.04079704,0.0469901,0.05308914,
 			0.05954472,0.06582334,0.07193966,0.07824595,
@@ -99,21 +96,45 @@ static int testIntegrands(int argc, char** args) {
 			0.562279,0.5686446,0.5749155,0.5811334,
 			0.5874276,0.5937501,0.6000223,0.6062977,
 			0.6125227,0.6188515,0.6251628,0.6313986};
-	/*	Range ranges [2];
-		ranges[0].a = -1.;
-		ranges[0].b = 1.;
-		ranges[1].a = 0.001;
-		ranges[1].b = 20;
-	mc MonteCarloIntegral(2, 1, &ranges);
-*/
+
+
+//	std::unordered_map<real,real> cache;
+	deque <CachedValue> cache;
+	for (int i = 0; i < 6; i++) {
+		cache.push_back(CachedValue(0,0));
+	}
+	auto check_cache = [](deque<CachedValue> &cache, real x) {
+		for (int i = 0; i < cache.size(); i++) {
+			if (x == cache[i].k)
+				return i;
+		}
+		return -1;
+	};
 
 	double ranges [2][2] = {{-1.,0.001},{1.,20.}};
-	for (int i = 0; i <= nIntegrals; i++) {
+
+	for (int i = 1; i <= nIntegrals; i++) {
 		for (real k : klist) {
 			data << k << " " << 
 				Integrate<2>([&](real x, real q) { 
-					return q*q/(Power(2*Pi,3))*Integrand(i, k, q, x, [&ps] (real k) {
-						return ps.Evaluate(k);
+					//std::cout << "cache size: " << cache.size() << endl;
+					return q*q/(Power(2*Pi,3))*Integrand(i, k, q, x, [&] (real kk) -> const real {
+						//if (cache.count(kk) == 0)
+						//	cache[kk] = ps.Evaluate(kk);
+						//return cache[kk];
+						
+						//return ps.Evaluate(kk);
+						//
+						int index = check_cache(cache, kk);
+						if (index == -1) {
+							cache.pop_back();
+							cache.push_front(CachedValue(kk, ps.Evaluate(kk)));
+						}
+						else {
+							cache.push_front(cache[index]);
+							cache.erase(cache.begin() + index + 1);
+						}
+						return cache[0].ps;
 						});
 					}, ranges[0], ranges[1],  0.001) << endl;
 			}
