@@ -9,7 +9,7 @@ https://github.com/jwgcarlson/Copter
 Install that library wherever is convenient, 
 and point your linker to that directory.
 If you install it in a default library location
-(e.g. found in `LD_LIBRRY_PATH`), you need only
+(e.g. found in `LD_LIBRARY_PATH`), you need only
 the `-lcopter` flag.
 
 Configure Makefile to use a C++ compiler that 
@@ -24,6 +24,6 @@ After compilation, calling `/.ZBiasEFT` will begin
 the computation, and continuously store the results 
 in a file called `integrals_noresum.txt`
 
-#TODO: 
+### TODO: 
 add options
 
